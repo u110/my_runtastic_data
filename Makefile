@@ -1,18 +1,19 @@
-gps-files:=$(shell find Sport-sessions/GPS-data/*.json)
-
 all: setup
 
-setup: clean dirs
+setup: dirs
 
-test:
-	head Sport-sessions/GPS-data/0562fe6b-084a-43e1-8b4b-50bf06a9141d.json | \
-		sed 's/"latitude":[0-9.]*/"latitude":-1/g'| \
-		sed 's/"longitude":[0-9.]*/"longitude":-1/g'
-
+MASKED_GPS_DIR:=data/masked-gps
 
 dirs:
 	-@mkdir data
 	-@mkdir data/masked-gps
+	-@mkdir data/runsessions
+
+
+data/runsessions/%:
+	cat Sport-sessions/$(@F) | \
+		sed 's/"latitude":[0-9.]*/"latitude":-1/g'| \
+		sed 's/"longitude":[0-9.]*/"longitude":-1/g' > data/runsessions/$(@F)
 
 
 data/masked-gps/%:
@@ -24,4 +25,14 @@ data/masked-gps/%:
 clean:
 	rm -rf data
 
-mask: $(patsubst %,data/masked-gps/%,$(gps-files))
+
+gps-target:=$(shell find Sport-sessions/GPS-data/*.json)
+gps-data: $(patsubst %,data/masked-gps/%,$(gps-target))
+
+runsessions-target:=$(shell find Sport-sessions/*.json)
+runsessions-data: $(patsubst %,data/runsessions/%,$(runsessions-target))
+
+all-data: gps-data runsessions-data
+
+
+.PHONY: all clean setup gps-data runsessions-data all-data
